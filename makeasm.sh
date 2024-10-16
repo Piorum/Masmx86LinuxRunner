@@ -27,18 +27,15 @@ ASM_DIR=$(dirname "$ASMFILE")
 MASM_PATH="$HOME/.wine/drive_c/masm32/bin"
 MASM_LIB_PATH="$HOME/.wine/drive_c/masm32/lib"
 
-# Create a directory in Wine's C: drive for object files and executables
-WINE_OBJ_DIR="$HOME/.wine/drive_c/asm"
-mkdir -p "$WINE_OBJ_DIR"
-
 # Convert paths to Windows format
 WIN_ASMFILE=$(winepath -w "$ASMFILE")
-WIN_OBJFILE="C:\\asm\\$BASENAME.obj"
-WIN_EXEFILE="C:\\asm\\$BASENAME.exe"
+WIN_ASM_DIR=$(winepath -w "$ASM_DIR")
+WIN_OBJFILE="$WIN_ASM_DIR\\$BASENAME.obj"
+WIN_EXEFILE="$WIN_ASM_DIR\\$BASENAME.exe"
 WIN_LIBPATH=$(winepath -w "$MASM_LIB_PATH")
 WIN_IRVINE_LIBPATH="C:\\Irvine"
 
-# Compile the .asm file to .obj file in C:\asm\
+# Compile the .asm file to .obj file in the same directory
 echo "Compiling $ASMFILE..."
 wine "$MASM_PATH/ml.exe" /c /coff /Zi /Fo"$WIN_OBJFILE" "$WIN_ASMFILE" > compile_output.txt 2>&1
 compile_status=$?
@@ -50,14 +47,14 @@ if [ $compile_status -ne 0 ]; then
 fi
 
 # Check if the object file was created
-if [ ! -f "$WINE_OBJ_DIR/$BASENAME.obj" ]; then
-    echo "Object file $WINE_OBJ_DIR/$BASENAME.obj was not created."
+OBJFILE="$ASM_DIR/$BASENAME.obj"
+if [ ! -f "$OBJFILE" ]; then
+    echo "Object file $OBJFILE was not created."
     exit 1
 fi
 
-# Link the object file to create an executable in C:\asm\
+# Link the object file to create an executable in the same directory
 echo "Linking $BASENAME.obj..."
-WIN_EXEFILE="C:\\asm\\$BASENAME.exe"
 wine "$MASM_PATH/link.exe" /VERBOSE /SUBSYSTEM:CONSOLE /OUT:"$WIN_EXEFILE" /LIBPATH:"$WIN_LIBPATH" /LIBPATH:"$WIN_IRVINE_LIBPATH" "$WIN_OBJFILE" Irvine32.lib kernel32.lib user32.lib > link_output.txt 2>&1
 link_status=$?
 
@@ -68,13 +65,14 @@ if [ $link_status -ne 0 ]; then
 fi
 
 # Check if the executable was created
-if [ ! -f "$WINE_OBJ_DIR/$BASENAME.exe" ]; then
-    echo "Executable $WINE_OBJ_DIR/$BASENAME.exe was not created."
+EXEFILE="$ASM_DIR/$BASENAME.exe"
+if [ ! -f "$EXEFILE" ]; then
+    echo "Executable $EXEFILE was not created."
     exit 1
 fi
 
 # Run the executable via Wine
 echo "Running $BASENAME.exe..."
-wine "$WINE_OBJ_DIR/$BASENAME.exe"
+wine "$EXEFILE"
 
 exit 0
